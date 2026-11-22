@@ -8,6 +8,12 @@
 - Eval harness works on Python 3.9 (`Path.write_text(newline=)` needs 3.10). CI skips 3.9 on Ubuntu only, because the
   runner image no longer ships it.
 - Suite linter and evals locate the skills when the four repositories are cloned side by side.
+- Eval runner isolation: a dedicated `CLAUDE_CONFIG_DIR` profile (or `--bare` with an API key), with `CLAUDE.md`,
+  auto memory, user settings, MCP and non-essential traffic off. The runner reads `stream-json` to record skill
+  triggers, cost and model, and stops the run as CONTAMINATED if the no-skill arm sees a suite skill. Paid runs need
+  `--confirm` for more than one session and stop at `--max-cost-usd`. The "Reply in English" prompt suffix is gone.
+- Two new cases (17 total): a conflicting installed skill that demands edits during review, and a crash fix that
+  must leave a test failing on the original bug.
 
 ## 3.0.0
 

@@ -57,12 +57,29 @@ The skills never dictate a response language. To set one for yourself:
 
 ## Behavioral evals
 
+17 cases measure what the skills change in an agent's behavior. `check_evals.py` proves each case
+discriminates (an idle agent fails, a reference solution passes) without calling any model.
+`run_evals.py` runs a real agent with and without the skills; every session is a paid model call.
+
 ```powershell
-py -3 suite/evals/check_evals.py                                   # validate the cases, offline
-py -3 suite/evals/run_evals.py --agent claude --runs 1 --cases core-review-is-read-only   # calls a paid model
+py -3 suite/evals/check_evals.py                                    # validate the cases, offline
+py -3 suite/evals/run_evals.py --check                              # isolation and plan, no model call
+py -3 suite/evals/run_evals.py --cases core-review-is-read-only --confirm   # 2 sessions
+py -3 suite/evals/run_evals.py --runs 5 --confirm --max-cost-usd 40         # full A/B
 ```
 
-The runner needs the `claude` CLI (or `--agent codex`, whose flags you should confirm for your version).
+Isolation matters more than anything else: if the no-skill arm can see the skills (user-level installs,
+`CLAUDE.md`, memory, settings, hooks, MCP), the comparison is meaningless.
+
+- `--isolation profile` (default): a dedicated Claude Code profile through `CLAUDE_CONFIG_DIR`, with `CLAUDE.md`,
+  auto memory, user settings, MCP servers and non-essential traffic off. Log in once inside that profile;
+  `--check` prints the command.
+- `--isolation bare`: `claude --bare` with skills passed through `--add-dir`. Needs `ANTHROPIC_API_KEY`.
+
+The runner reads each session's `stream-json` events. It records which skills were invoked (trigger rate),
+the reported cost, and the model. If the no-skill arm invokes or lists a suite skill, the run stops as
+CONTAMINATED instead of producing numbers. More than one session needs `--confirm`, and `--max-cost-usd`
+(default 10) stops new sessions once the reported spend reaches it.
 
 ## License
 
