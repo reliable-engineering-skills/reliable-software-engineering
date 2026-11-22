@@ -1,5 +1,14 @@
 # Changelog
 
+## Unreleased
+
+- Codex language policy: `suite/user-instructions/AGENTS.md` is replaced by `codex-config.toml`
+  (`developer_instructions`). On Codex desktop 26.1117 for Windows, `~/.codex/AGENTS.md` made every launch show
+  "Connection for host ID local not found".
+- Eval harness works on Python 3.9 (`Path.write_text(newline=)` needs 3.10). CI skips 3.9 on Ubuntu only, because the
+  runner image no longer ships it.
+- Suite linter and evals locate the skills when the four repositories are cloned side by side.
+
 ## 3.0.0
 
 ### Structure (breaking)

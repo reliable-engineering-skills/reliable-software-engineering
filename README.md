@@ -40,8 +40,20 @@ Codex: clone the same four repositories into `~/.codex/skills/`. Update later wi
   - `suite/tools/check_skills.py`: lints all four skills (frontmatter, links, anchors, residue).
   - `suite/evals/`: 15 behavioral cases, a self-check (an idle agent fails, the reference passes) and an A/B
     runner that compares an agent with and without the skills.
-  - `suite/user-instructions/`: an optional user-level language policy for `~/.claude/CLAUDE.md` or `~/.codex/AGENTS.md`.
-    The skills themselves are language-neutral.
+  - `suite/user-instructions/`: an optional user-level language policy (see below). The skills themselves are
+    language-neutral.
+
+## Optional: a user-level language policy
+
+The skills never dictate a response language. To set one for yourself:
+
+- **Claude Code:** copy `suite/user-instructions/CLAUDE.md` to `~/.claude/CLAUDE.md` and edit it.
+- **Codex:** paste `suite/user-instructions/codex-config.toml` into `~/.codex/config.toml` (top level, before the first
+  `[table]`). It sets `developer_instructions`.
+
+> Avoid `~/.codex/AGENTS.md` for this on Codex desktop 26.1117 (Windows): with that file present, every launch showed
+> "Uncaught Exception: Connection for host ID local not found". Removing it stopped the dialog, and
+> `developer_instructions` applied the same policy without it.
 
 ## Behavioral evals
 
