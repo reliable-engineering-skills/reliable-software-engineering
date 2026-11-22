@@ -179,6 +179,9 @@ def run_once(case, arm, profile, mode, args, out_dir):
             argv += ['--strict-mcp-config']
         if mode == 'profile':
             argv += ['--setting-sources', 'project,local']
+        if args.user_instructions:
+            # Stands in for ~/.claude/CLAUDE.md or Codex developer_instructions, which isolation disables.
+            argv += ['--append-system-prompt-file', str(args.user_instructions)]
         if args.model:
             argv += ['--model', args.model]
         prompt = case['prompt'] + args.suffix
@@ -274,6 +277,8 @@ def main(argv=None):
                         help=f'dedicated CLAUDE_CONFIG_DIR for --isolation profile (default {DEFAULT_PROFILE_DIR})')
     parser.add_argument('--skills-subdir', help='where the agent reads project skills (overrides the profile)')
     parser.add_argument('--model', help='pin the model for every session (recommended for comparisons)')
+    parser.add_argument('--user-instructions', type=Path,
+                        help='file appended to the system prompt in every session, to measure user-level instructions')
     parser.add_argument('--configs', default='with,without', help='comma list of: with, without')
     parser.add_argument('--cases', help='comma list of case ids (default: all)')
     parser.add_argument('--runs', type=int, default=1)
@@ -293,6 +298,10 @@ def main(argv=None):
     if args.skills_subdir:
         profile['skills_subdir'] = args.skills_subdir
     mode = args.isolation or profile['isolation']
+    if args.user_instructions:
+        args.user_instructions = args.user_instructions.resolve()
+        if not args.user_instructions.is_file():
+            parser.error(f'--user-instructions file not found: {args.user_instructions}')
     arms = [c for c in args.configs.split(',') if c]
     if not set(arms) <= {'with', 'without'}:
         parser.error('configs must be with and/or without')
@@ -341,6 +350,7 @@ def main(argv=None):
         stopped, code = (f'AGENT UNAVAILABLE (usage limit, login or API error). That session is excluded; '
                          f'the {len(results)} sessions before it are valid. Resume later with the remaining cases. {exc}'), 4
     header = [f'- Agent: `{" ".join(profile["argv"])}`', f'- Isolation: {mode}',
+              f'- User instructions: {args.user_instructions or "none"}',
               f'- CLI: {cli_version(profile) or "unknown"}; model: '
               f'{args.model or next((r["model"] for r in results if r["model"]), "unknown")}',
               f'- Sessions: {len(results)} of {sessions}; reported spend ${spent:.2f}']

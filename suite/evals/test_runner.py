@@ -19,6 +19,9 @@ case = next(c for c in cases.CASES if c["id"] == os.environ["RSE_EVAL_CASE"])
 arm = os.environ["RSE_EVAL_ARM"]
 emit = lambda event: print(json.dumps(event), flush=True)
 emit({{"type": "system", "subtype": "init", "model": "fake-model"}})
+if "--append-system-prompt-file" in sys.argv:
+    extra = open(sys.argv[sys.argv.index("--append-system-prompt-file") + 1], encoding="utf-8").read()
+    open(os.environ["RSE_FAKE_SEEN"], "w", encoding="utf-8").write(extra)
 skill = case["skill"] if arm == "with" else (case["skill"] if os.environ.get("RSE_FAKE_CONTAMINATE") else None)
 if skill:
     emit({{"type": "assistant", "message": {{"content": [
@@ -91,6 +94,15 @@ class RunnerTests(unittest.TestCase):
         results, _, _ = self.run_suite('--configs', 'with', '--cases', 'packs-draft-not-approved')
         self.assertEqual(len(results), 1)
         self.assertTrue(results[0]['passed'])
+
+    def test_user_instructions_reach_the_agent_and_the_summary(self):
+        rules = self.root / 'rules.md'
+        rules.write_text('A review never authorizes edits.', encoding='utf-8')
+        seen = self.root / 'seen.txt'
+        results, result_dir, _ = self.run_suite('--configs', 'without', '--cases', 'core-review-is-read-only',
+                                                '--user-instructions', str(rules), env_extra={'RSE_FAKE_SEEN': str(seen)})
+        self.assertEqual(seen.read_text(encoding='utf-8'), 'A review never authorizes edits.')
+        self.assertIn('rules.md', (result_dir / 'summary.md').read_text(encoding='utf-8'))
 
     def test_more_than_one_session_needs_confirm(self):
         results, _, out = self.run_suite('--cases', 'core-review-is-read-only', expect=2)

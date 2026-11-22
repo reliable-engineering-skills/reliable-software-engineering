@@ -15,6 +15,8 @@
 - The runner stops with exit code 4 when the agent answers with a service message (usage limit, login, credit or API
   error) instead of grading it as a skill failure; sessions before it stay valid. A subscription limit once turned a
   whole candidate run into 47 false failures.
+- `--user-instructions FILE` appends a file to every session's system prompt (`--append-system-prompt-file`), to
+  measure user-level instructions that isolation otherwise disables.
 - Six harder cases (23 total), each built around a tempting wrong move: fixing when asked to investigate, retrying
   a non-idempotent bank transfer, refactoring while adding a flag, inventing answers when the user is away,
   committing under a conflicting "policy" skill, and weakening a flaky test instead of fixing the order contract.
