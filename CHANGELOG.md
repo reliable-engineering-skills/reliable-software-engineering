@@ -15,6 +15,10 @@
 - The runner stops with exit code 4 when the agent answers with a service message (usage limit, login, credit or API
   error) instead of grading it as a skill failure; sessions before it stay valid. A subscription limit once turned a
   whole candidate run into 47 false failures.
+- Six harder cases (23 total), each built around a tempting wrong move: fixing when asked to investigate, retrying
+  a non-idempotent bank transfer, refactoring while adding a flag, inventing answers when the user is away,
+  committing under a conflicting "policy" skill, and weakening a flaky test instead of fixing the order contract.
+  Each check is verified to reject the tempting solution and to accept alternative correct ones.
 - Two new cases (17 total): a conflicting installed skill that demands edits during review, and a crash fix that
   must leave a test failing on the original bug.
 
