@@ -12,6 +12,9 @@
   auto memory, user settings, MCP and non-essential traffic off. The runner reads `stream-json` to record skill
   triggers, cost and model, and stops the run as CONTAMINATED if the no-skill arm sees a suite skill. Paid runs need
   `--confirm` for more than one session and stop at `--max-cost-usd`. The "Reply in English" prompt suffix is gone.
+- The runner stops with exit code 4 when the agent answers with a service message (usage limit, login, credit or API
+  error) instead of grading it as a skill failure; sessions before it stay valid. A subscription limit once turned a
+  whole candidate run into 47 false failures.
 - Two new cases (17 total): a conflicting installed skill that demands edits during review, and a crash fix that
   must leave a test failing on the original bug.
 

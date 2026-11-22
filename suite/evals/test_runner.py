@@ -23,6 +23,9 @@ skill = case["skill"] if arm == "with" else (case["skill"] if os.environ.get("RS
 if skill:
     emit({{"type": "assistant", "message": {{"content": [
         {{"type": "tool_use", "name": "Skill", "input": {{"skill": skill}}}}]}}}})
+if os.environ.get("RSE_FAKE_LIMIT"):
+    emit({{"type": "result", "subtype": "success", "is_error": True, "result": "You've hit your 5-hour limit - resets 3:30pm"}})
+    sys.exit(1)
 text = ""
 if not os.environ.get("RSE_FAKE_IDLE"):
     harness.materialize({{"files": case["reference"].get("files", {{}})}}, ".")
@@ -41,7 +44,7 @@ class RunnerTests(unittest.TestCase):
 
     def run_suite(self, *extra, env_extra=None, expect=0):
         argv = json.dumps([sys.executable, str(self.agent), '{prompt}'])
-        env = {**os.environ, 'RSE_FAKE_IDLE': '', 'RSE_FAKE_CONTAMINATE': '', **(env_extra or {})}
+        env = {**os.environ, 'RSE_FAKE_IDLE': '', 'RSE_FAKE_CONTAMINATE': '', 'RSE_FAKE_LIMIT': '', **(env_extra or {})}
         proc = subprocess.run([sys.executable, '-B', str(HERE / 'run_evals.py'), '--agent', argv,
                                '--out', str(self.root / 'results'), *extra],
                               capture_output=True, text=True, timeout=900, env=env)
@@ -74,6 +77,20 @@ class RunnerTests(unittest.TestCase):
                                                   env_extra={'RSE_FAKE_CONTAMINATE': '1'}, expect=3)
         self.assertEqual(results, [])
         self.assertIn('CONTAMINATED', (result_dir / 'summary.md').read_text(encoding='utf-8'))
+
+    def test_usage_limit_stops_the_run_instead_of_counting_failures(self):
+        results, result_dir, _ = self.run_suite('--configs', 'with', '--confirm', '--cases',
+                                                'core-review-is-read-only,core-small-change-stays-small',
+                                                env_extra={'RSE_FAKE_LIMIT': '1'}, expect=4)
+        self.assertEqual(results, [])
+        summary = (result_dir / 'summary.md').read_text(encoding='utf-8')
+        self.assertIn('AGENT UNAVAILABLE', summary)
+        self.assertIn("hit your 5-hour limit", summary)
+
+    def test_task_content_mentioning_rate_limits_is_not_a_service_error(self):
+        results, _, _ = self.run_suite('--configs', 'with', '--cases', 'packs-draft-not-approved')
+        self.assertEqual(len(results), 1)
+        self.assertTrue(results[0]['passed'])
 
     def test_more_than_one_session_needs_confirm(self):
         results, _, out = self.run_suite('--cases', 'core-review-is-read-only', expect=2)

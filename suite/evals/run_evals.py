@@ -22,6 +22,7 @@ answer, the raw event stream and the diff. Rubric items are listed for human or 
 import argparse
 import json
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -61,6 +62,16 @@ class Contaminated(Exception):
     pass
 
 
+class AgentUnavailable(Exception):
+    """The agent answered with a service message (usage limit, auth, API error) instead of doing the task."""
+
+
+# Service messages, matched against the final answer only. Keep them specific: broad words such as
+# "rate limit" also appear in legitimate task content.
+UNAVAILABLE = re.compile(r"^(You've hit your [\w-]+ limit|You've reached your|Credit balance is too low|"
+                         r"Invalid API key|Please run /login|API Error: (401|403|429|5\d\d))", re.I)
+
+
 def git(directory, *args):
     return subprocess.run(['git', '-c', 'user.name=eval', '-c', 'user.email=eval@localhost',
                            '-c', 'core.autocrlf=false', *args],
@@ -72,7 +83,7 @@ def parse_stream(raw):
 
     Returns None for fields the agent did not report (plain-text agents, older CLIs)."""
     info = {'text': None, 'skills_invoked': [], 'skills_listed': None, 'cost_usd': None,
-            'turns': None, 'model': None, 'structured': False}
+            'turns': None, 'model': None, 'structured': False, 'is_error': False, 'result_seen': False}
     for line in raw.splitlines():
         line = line.strip()
         if not line.startswith('{'):
@@ -98,6 +109,8 @@ def parse_stream(raw):
             info['text'] = event.get('result')
             info['cost_usd'] = event.get('total_cost_usd')
             info['turns'] = event.get('num_turns')
+            info['result_seen'] = True
+            info['is_error'] = bool(event.get('is_error')) or str(event.get('subtype', '')).startswith('error')
     return info
 
 
@@ -203,6 +216,9 @@ def run_once(case, arm, profile, mode, args, out_dir):
               'structured': info['structured'], 'model': info['model'], 'cost_usd': info['cost_usd'],
               'turns': info['turns'], 'skills_invoked': info['skills_invoked'],
               'triggered': (case['skill'] in info['skills_invoked']) if info['structured'] else None}
+    answer_head = (answer or '').strip()
+    if info['structured'] and (info['is_error'] or not info['result_seen'] or UNAVAILABLE.match(answer_head)):
+        raise AgentUnavailable(f'{case["id"]} [{arm}]: {answer_head[:160] or "no result event"}; see {out_dir}')
     if arm == 'without' and (invoked_suite or listed_suite):
         raise Contaminated(f'{case["id"]}: the no-skill arm saw suite skills '
                            f'(invoked {invoked_suite or "-"}, listed {listed_suite or "-"}); see {out_dir}')
@@ -321,6 +337,9 @@ def main(argv=None):
         pass
     except Contaminated as exc:
         stopped, code = f'CONTAMINATED - isolation failed, results invalid. {exc}', 3
+    except AgentUnavailable as exc:
+        stopped, code = (f'AGENT UNAVAILABLE (usage limit, login or API error). That session is excluded; '
+                         f'the {len(results)} sessions before it are valid. Resume later with the remaining cases. {exc}'), 4
     header = [f'- Agent: `{" ".join(profile["argv"])}`', f'- Isolation: {mode}',
               f'- CLI: {cli_version(profile) or "unknown"}; model: '
               f'{args.model or next((r["model"] for r in results if r["model"]), "unknown")}',
