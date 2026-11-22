@@ -17,7 +17,7 @@ def materialize(case, directory):
     for rel, content in case['files'].items():
         path = directory / rel
         path.parent.mkdir(parents=True, exist_ok=True)
-        path.write_text(content, encoding='utf-8', newline='\n')
+        path.write_bytes(content.encode('utf-8'))  # keeps LF exactly; write_text(newline=) needs Python 3.10
 
 
 def snapshot(directory):
