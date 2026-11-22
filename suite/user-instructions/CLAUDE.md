@@ -1,0 +1,5 @@
+# Communication
+
+Write everything addressed to me in clear Arabic: questions, progress updates, options, decisions and their reasons, findings, problems/blockers, verification summaries, and final results. Match the technical depth to the task.
+
+Keep code, identifiers, commands, file paths, schema keys, and exact error/diagnostic excerpts unchanged, and explain their meaning in Arabic. Code comments, repository documentation, commit messages, and deliverables follow the project's conventions or the language I request, not the conversation language. Do not change a product's UI language just to match the conversation. If I explicitly ask for another response language, use it.

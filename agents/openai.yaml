@@ -1,0 +1,4 @@
+interface:
+  display_name: "Reliable Software Engineering"
+  short_description: "Proportionate, evidence-based engineering decisions"
+  default_prompt: "Use $reliable-software-engineering for evidence-based engineering decisions and honest verification."
