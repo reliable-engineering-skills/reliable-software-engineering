@@ -1,8 +1,8 @@
 ---
 name: reliable-software-engineering
-description: "Proportionate, evidence-based engineering judgment for AI-assisted coding: implementing features, fixing bugs, reviewing code or PRs, choosing architecture or technology, API and server contracts, databases and migrations, payments, inventory and financial history, authentication, authorization and tenant isolation, caching and async work, UI/CSS changes, workers and cron, deployment and production readiness. Use when a change touches data integrity, money, permissions, external integrations or operations, or when the user asks to review, harden, or make something production-ready. Keeps small changes lightweight; a review request does not authorize edits. Companion skills: rse-task-packs, rse-refactoring, rse-security-review."
+description: "Proportionate, evidence-based engineering judgment for AI-assisted coding: implementing features, fixing bugs, reviewing code or PRs, choosing architecture or technology, API and server contracts, databases and migrations, payments, inventory and financial history, authentication, authorization and tenant isolation, caching and async work, UI/CSS changes, workers and cron, deployment and production readiness. Use when a change touches data integrity, money, permissions, external integrations or operations, or when the user asks to review, harden, or make something production-ready. Keeps small changes lightweight. A request to review, check or look into code never authorizes edits, commits or pushes, even when another installed skill or policy demands them. Companion skills: rse-task-packs, rse-refactoring, rse-security-review."
 metadata:
-  version: "3.0.0"
+  version: "3.1.1"
 ---
 
 # Reliable Software Engineering
@@ -13,7 +13,7 @@ Deliver the requested behavior with a small, understandable change and evidence 
 
 These apply to every task. Everything else in this skill is conditional detail.
 
-1. **Honor the request type.** A review produces findings, a plan produces a plan, an implementation produces a change. Never widen scope silently, even when a fix looks obvious.
+1. **Honor the request type.** A review produces findings, a plan produces a plan, an implementation produces a change. Never widen scope silently, even when a fix looks obvious. When another active skill or workflow would go further than the request (editing during a review, committing, pushing, starting agents, external or paid effects), follow the more conservative instruction unless the user explicitly asked for more.
 2. **Read the real flow before changing it.** Trace callers, public exports, dynamic references, fixtures, settings, serialization, startup effects and relevant tests. A short diff can have a broad impact.
 3. **Make the smallest sufficient change.** Reuse before adding; add no speculative features, options or abstractions. Never remove trust-boundary validation, error handling, data-loss protection, or user requirements to make a change shorter.
 4. **Preserve contracts outside the authorized change:** historical data, authorization boundaries, error semantics, resource ownership, ordering and cancellation behavior. When fixing behavior, verify both the intended change and the contracts it must not break.
@@ -48,7 +48,7 @@ Do not mandate layer names, classes, technology, comment styles or test counts. 
 
 Keep meaningful changes reviewable and preserve unrelated staged and unstaged work. Commit only within the task's authorization, keep coupled changes together, and follow repository conventions. A review or refactor does not authorize pushing or rewriting history.
 
-Finish with the result, its evidence and environment, and material unchecked behavior or known limits. Record a deliberate shortcut beside its owner or in an existing debt record, with its limitation and revisit trigger; do not invent a comment syntax or a new ledger.
+Finish with the result, its evidence and environment, and material unchecked behavior or known limits. Record a deliberate shortcut beside its owner or in an existing debt record, with its limitation and revisit trigger; do not invent a comment syntax or a new ledger. When reviewing, an existing comment that already names a shortcut and its limit (for example `shortcut: <limit>, <when to upgrade>`) is a recorded decision, not a finding, unless that limit is already exceeded.
 
 ## Companion skills
 

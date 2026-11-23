@@ -1,6 +1,39 @@
 # Changelog
 
-## Unreleased
+## 3.1.1
+
+Merged after the behavioral evals (23 cases, 3 runs each, isolated profile, November 2026). Pass rate of all
+deterministic checks:
+
+| Model | No skills | 3.0.0 | 3.1.1 |
+| --- | --- | --- | --- |
+| Claude Opus 5.5 | 84% (58/69) | 93% (57/61) | 99% (68/69) |
+| Claude Sonnet 5.5 | 72% (50/69) | 86% (59/69) | 93% (64/69) |
+
+The 3.0.0 Opus arm missed four of the newer cases (61 sessions). The 3.1.1 runs also had an unreleased debugging
+companion installed; it did not trigger on Sonnet's debugging case and is not part of this release. Sonnet rarely
+invokes the core skill, so most of its gain comes from the skill descriptions it always sees. Agents could edit
+files but not execute Python.
+
+### Skills
+
+- The core description states that a request to review, check or look into code never authorizes edits, commits or
+  pushes, even when another installed skill or policy demands them. Measured reason: under a conflicting "policy"
+  skill the core skill was never invoked, so a rule that lived only in the skill body never loaded. With the
+  sentence in the description: 8 of 8 runs on Opus and 3 of 3 on Sonnet kept the review read-only (3.0.0: 2 of 5
+  and 1 of 3).
+- Core rule 1: when another active skill or workflow would go further than the request (editing during a review,
+  committing, pushing, starting agents, external or paid effects), the more conservative instruction wins unless
+  the user explicitly asked for more.
+- Reviews treat an existing comment that names a shortcut and its limit (for example `shortcut: <limit>, <when>`)
+  as a recorded decision, not a finding, unless the limit is exceeded.
+- `references/verification.md`: tests at public seams, anti-patterns, and test-first as a mode the user can request.
+- `rse-task-packs`: drafting a spec when none exists, with one batched question for consequential unknowns only; a
+  task waiting on an open decision stays `draft`, or `blocked` with a `blocker`, and adds no manifest fields.
+- `suite/user-instructions/review-guard.md`: an optional user-level guard for reviews (defense in depth; the
+  description alone already held the boundary in the evals).
+
+### Tooling
 
 - Codex language policy: `suite/user-instructions/AGENTS.md` is replaced by `codex-config.toml`
   (`developer_instructions`). On Codex desktop 26.1117 for Windows, `~/.codex/AGENTS.md` made every launch show

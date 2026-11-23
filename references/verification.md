@@ -23,6 +23,13 @@ Check whether the test invokes the intended code, asserts a meaningful outcome, 
 
 For a consequential behavioral defect, a representative case failing before the fix and passing after it is strong evidence. Changed requirements may justify changing a test with an explanation of the new contract. Do not forbid all test edits or silently edit tests to hide defects.
 
+### Design tests at public seams
+
+- Test through the interface its consumers use: a public function, endpoint, command, event or user journey. Tests pinned to internal helpers, private methods or storage layout break during refactors although behavior did not change.
+- Avoid tautological tests whose expected value is computed the same way as the code under test, mocks of internal collaborators, and bulk tests written before the behavior is understood.
+- For routine work choose the seams yourself and name them in the report. Ask only when the choice changes or exposes a public contract.
+- Test-first (write one failing test at a seam, the minimum code to pass it, repeat, then refactor while green) is a mode the user can ask for with "test-first" or "TDD". It is not required for every change; proportionate verification still decides how much testing a change needs.
+
 ### Complementary evidence
 
 - Code review exposes structure, responsibility/data leakage, and assumptions not exercised by tests.

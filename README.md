@@ -38,10 +38,10 @@ Codex: clone the same four repositories into `~/.codex/skills/`. Update later wi
   security and controls, async and cache, UI/CSS, operations, systems lifecycle, misconceptions, sources).
 - `suite/`: development tooling for the whole suite, not loaded by agents:
   - `suite/tools/check_skills.py`: lints all four skills (frontmatter, links, anchors, residue).
-  - `suite/evals/`: 15 behavioral cases, a self-check (an idle agent fails, the reference passes) and an A/B
+  - `suite/evals/`: 23 behavioral cases, a self-check (an idle agent fails, the reference passes) and an A/B
     runner that compares an agent with and without the skills.
-  - `suite/user-instructions/`: an optional user-level language policy (see below). The skills themselves are
-    language-neutral.
+  - `suite/user-instructions/`: an optional user-level language policy and an optional review guard (see below).
+    The skills themselves are language-neutral.
 
 ## Optional: a user-level language policy
 
@@ -55,9 +55,17 @@ The skills never dictate a response language. To set one for yourself:
 > "Uncaught Exception: Connection for host ID local not found". Removing it stopped the dialog, and
 > `developer_instructions` applied the same policy without it.
 
+## Optional: a user-level review guard
+
+`suite/user-instructions/review-guard.md` states, as a user instruction, that a review or investigation request never
+authorizes edits, commits or pushes, even when another installed skill demands them. Append it to `~/.claude/CLAUDE.md`
+or to Codex `developer_instructions` if you install skills or plugins that push reviews toward changes. In our evals the
+skill description alone already held this boundary on both models we measured, so the guard is defense in depth,
+not a measured improvement.
+
 ## Behavioral evals
 
-17 cases measure what the skills change in an agent's behavior. `check_evals.py` proves each case
+23 cases measure what the skills change in an agent's behavior. `check_evals.py` proves each case
 discriminates (an idle agent fails, a reference solution passes) without calling any model.
 `run_evals.py` runs a real agent with and without the skills; every session is a paid model call.
 
@@ -81,6 +89,13 @@ the reported cost, and the model. If the no-skill arm invokes or lists a suite s
 CONTAMINATED instead of producing numbers. More than one session needs `--confirm`, and `--max-cost-usd`
 (default 10) stops new sessions once the reported spend reaches it.
 
+### Measured results
+
+Each release lists its measured pass rates per model in the
+[changelog](https://github.com/reliable-engineering-skills/reliable-software-engineering/blob/main/CHANGELOG.md).
+Agents in those runs could edit files but not execute Python, so the cases measure decisions and diffs, not test
+execution.
+
 ## License
 
-MIT. Version 3.0.0; see the [core changelog](https://github.com/reliable-engineering-skills/reliable-software-engineering/blob/main/CHANGELOG.md).
+MIT. Version 3.1.1; see the [core changelog](https://github.com/reliable-engineering-skills/reliable-software-engineering/blob/main/CHANGELOG.md).
