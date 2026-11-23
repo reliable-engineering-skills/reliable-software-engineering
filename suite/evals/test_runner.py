@@ -22,6 +22,8 @@ emit({{"type": "system", "subtype": "init", "model": "fake-model"}})
 if "--append-system-prompt-file" in sys.argv:
     extra = open(sys.argv[sys.argv.index("--append-system-prompt-file") + 1], encoding="utf-8").read()
     open(os.environ["RSE_FAKE_SEEN"], "w", encoding="utf-8").write(extra)
+if os.environ.get("RSE_FAKE_PATH"):
+    open(os.environ["RSE_FAKE_PATH"], "w", encoding="utf-8").write(os.environ["PATH"].split(os.pathsep)[0])
 skill = case["skill"] if arm == "with" else (case["skill"] if os.environ.get("RSE_FAKE_CONTAMINATE") else None)
 if skill:
     emit({{"type": "assistant", "message": {{"content": [
@@ -47,7 +49,7 @@ class RunnerTests(unittest.TestCase):
 
     def run_suite(self, *extra, env_extra=None, expect=0):
         argv = json.dumps([sys.executable, str(self.agent), '{prompt}'])
-        env = {**os.environ, 'RSE_FAKE_IDLE': '', 'RSE_FAKE_CONTAMINATE': '', 'RSE_FAKE_LIMIT': '', **(env_extra or {})}
+        env = {**os.environ, 'RSE_FAKE_IDLE': '', 'RSE_FAKE_CONTAMINATE': '', 'RSE_FAKE_LIMIT': '', 'RSE_FAKE_PATH': '', **(env_extra or {})}
         proc = subprocess.run([sys.executable, '-B', str(HERE / 'run_evals.py'), '--agent', argv,
                                '--out', str(self.root / 'results'), *extra],
                               capture_output=True, text=True, timeout=900, env=env)
@@ -103,6 +105,20 @@ class RunnerTests(unittest.TestCase):
                                                 '--user-instructions', str(rules), env_extra={'RSE_FAKE_SEEN': str(seen)})
         self.assertEqual(seen.read_text(encoding='utf-8'), 'A review never authorizes edits.')
         self.assertIn('rules.md', (result_dir / 'summary.md').read_text(encoding='utf-8'))
+
+    def test_allow_exec_puts_the_eval_interpreter_first_on_path_and_is_recorded(self):
+        seen = self.root / 'path.txt'
+        results, result_dir, out = self.run_suite('--configs', 'with', '--cases', 'core-review-is-read-only',
+                                                  '--allow-exec', env_extra={'RSE_FAKE_PATH': str(seen)})
+        self.assertEqual(Path(seen.read_text(encoding='utf-8')), Path(sys.executable).parent)
+        self.assertTrue(results[0]['allow_exec'])
+        self.assertIn('python, py and pytest allowed', (result_dir / 'summary.md').read_text(encoding='utf-8'))
+        self.assertIn('exec=python allowed', out)
+
+    def test_exec_is_denied_by_default(self):
+        results, result_dir, _ = self.run_suite('--configs', 'with', '--cases', 'core-review-is-read-only')
+        self.assertFalse(results[0]['allow_exec'])
+        self.assertIn('denied (edits only)', (result_dir / 'summary.md').read_text(encoding='utf-8'))
 
     def test_more_than_one_session_needs_confirm(self):
         results, _, out = self.run_suite('--cases', 'core-review-is-read-only', expect=2)

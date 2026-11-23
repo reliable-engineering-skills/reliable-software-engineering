@@ -1,5 +1,12 @@
 # Changelog
 
+## Unreleased
+
+- Eval runner: `--allow-exec` lets the agent run `python`, `py` and `pytest` in its temporary repository (Claude Code
+  `--allowedTools` rules, with the evals' interpreter first on `PATH` so a Windows Store stub cannot shadow it).
+  Without it, cases that need a test run, such as `core-unrelated-failure-reported`, pass or fail on wording alone.
+  Off by default; recorded in `summary.md` and in each result.
+
 ## 3.1.1
 
 Merged after the behavioral evals (23 cases, 3 runs each, isolated profile, November 2026). Pass rate of all

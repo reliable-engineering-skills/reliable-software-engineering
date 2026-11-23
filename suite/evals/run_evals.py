@@ -44,8 +44,11 @@ SUITE_NAMES = sorted(p.name for p in SKILLS.iterdir()
                      if (p / 'SKILL.md').is_file() and (p.name == 'reliable-software-engineering' or p.name.startswith('rse-')))
 COPY_IGNORE = shutil.ignore_patterns('tests', 'suite', '.git', '.github', '__pycache__')
 STREAM = ['--output-format', 'stream-json', '--verbose', '--permission-mode', 'acceptEdits', '--max-turns', '40']
+# --allow-exec: let the agent run Python and pytest (tests, reproductions) inside the session's temporary repo.
+EXEC_RULES = ['Bash(python:*)', 'Bash(python3:*)', 'Bash(py:*)', 'Bash(pytest:*)']
 PROFILES = {
-    'claude': {'argv': ['claude', '-p', '{prompt}', *STREAM], 'skills_subdir': '.claude/skills', 'isolation': 'profile'},
+    'claude': {'argv': ['claude', '-p', '{prompt}', *STREAM], 'skills_subdir': '.claude/skills', 'isolation': 'profile',
+               'exec_argv': ['--allowedTools', *EXEC_RULES]},
     # Codex: flags, skills folder and isolation are unverified for current versions; results are indicative only.
     'codex': {'argv': ['codex', 'exec', '--full-auto', '--skip-git-repo-check', '{prompt}'],
               'skills_subdir': '.agents/skills', 'isolation': 'none'},
@@ -123,6 +126,13 @@ def isolation_env(mode, args):
     return env
 
 
+def exec_environment(env):
+    """Put the interpreter running the evals first on PATH, ahead of stubs such as the Windows Store python.exe."""
+    env = dict(env)
+    env['PATH'] = os.pathsep.join([str(Path(sys.executable).parent), env.get('PATH', '')])
+    return env
+
+
 def check_isolation(mode, args):
     """Return a list of problems that make a measurement untrustworthy; empty means ready."""
     problems = []
@@ -184,6 +194,8 @@ def run_once(case, arm, profile, mode, args, out_dir):
             argv += ['--append-system-prompt-file', str(args.user_instructions)]
         if args.model:
             argv += ['--model', args.model]
+        if args.allow_exec:
+            argv += profile.get('exec_argv', [])
         prompt = case['prompt'] + args.suffix
         argv = [a.replace('{prompt}', prompt) for a in argv] + extra
         located = shutil.which(argv[0])
@@ -191,6 +203,8 @@ def run_once(case, arm, profile, mode, args, out_dir):
             argv[0] = located  # resolves claude.cmd / codex.cmd on Windows
         env = isolation_env(mode, args)
         env.update(RSE_EVAL_CASE=case['id'], RSE_EVAL_ARM=arm)
+        if args.allow_exec:
+            env = exec_environment(env)
         start = time.monotonic()
         try:
             proc = subprocess.run(argv, cwd=work, capture_output=True, text=True, encoding='utf-8',
@@ -204,7 +218,8 @@ def run_once(case, arm, profile, mode, args, out_dir):
         seconds = round(time.monotonic() - start, 1)
         info = parse_stream(raw)
         answer = info['text'] if info['text'] is not None else raw
-        git(work, 'add', '-A', '--', '.', ':(exclude).claude', ':(exclude).agents', ':(exclude).codex')
+        git(work, 'add', '-A', '--', '.', ':(exclude).claude', ':(exclude).agents', ':(exclude).codex',
+            ':(exclude,glob)**/__pycache__/**', ':(exclude,glob)**/.pytest_cache/**')
         diff = git(work, 'diff', '--cached', 'HEAD')
         checks = harness.evaluate(case, work, answer, before, harness.default_context(SKILLS))
     out_dir.mkdir(parents=True, exist_ok=True)
@@ -217,7 +232,7 @@ def run_once(case, arm, profile, mode, args, out_dir):
     record = {'agent_exit': agent_exit, 'seconds': seconds, 'passed': all(ok for _, ok, _ in checks),
               'checks': [{'name': n, 'passed': ok, 'detail': det} for n, ok, det in checks],
               'structured': info['structured'], 'model': info['model'], 'cost_usd': info['cost_usd'],
-              'turns': info['turns'], 'skills_invoked': info['skills_invoked'],
+              'turns': info['turns'], 'skills_invoked': info['skills_invoked'], 'allow_exec': args.allow_exec,
               'triggered': (case['skill'] in info['skills_invoked']) if info['structured'] else None}
     answer_head = (answer or '').strip()
     if info['structured'] and (info['is_error'] or not info['result_seen'] or UNAVAILABLE.match(answer_head)):
@@ -279,6 +294,8 @@ def main(argv=None):
     parser.add_argument('--model', help='pin the model for every session (recommended for comparisons)')
     parser.add_argument('--user-instructions', type=Path,
                         help='file appended to the system prompt in every session, to measure user-level instructions')
+    parser.add_argument('--allow-exec', action='store_true',
+                        help='let the agent run python/py/pytest in its temporary repo (arbitrary code as your user)')
     parser.add_argument('--configs', default='with,without', help='comma list of: with, without')
     parser.add_argument('--cases', help='comma list of case ids (default: all)')
     parser.add_argument('--runs', type=int, default=1)
@@ -312,7 +329,9 @@ def main(argv=None):
 
     problems = check_isolation(mode, args)
     print(f'Plan: {len(selected)} case(s) x {len(arms)} arm(s) x {args.runs} run(s) = {sessions} session(s); '
-          f'isolation={mode}; spend cap ${args.max_cost_usd:.2f}; suite skills: {", ".join(SUITE_NAMES)}')
+          f'isolation={mode}; exec={"python allowed" if args.allow_exec else "denied"}; spend cap ${args.max_cost_usd:.2f}; suite skills: {", ".join(SUITE_NAMES)}')
+    if args.allow_exec and 'exec_argv' not in profile:
+        print('WARNING: --allow-exec only puts Python on PATH for this agent; its own permission settings decide.')
     if mode == 'none':
         print('WARNING: no isolation; user-level skills, CLAUDE.md or memory may leak into the no-skill arm.')
     for problem in problems:
@@ -351,6 +370,7 @@ def main(argv=None):
                          f'the {len(results)} sessions before it are valid. Resume later with the remaining cases. {exc}'), 4
     header = [f'- Agent: `{" ".join(profile["argv"])}`', f'- Isolation: {mode}',
               f'- User instructions: {args.user_instructions or "none"}',
+              f'- Command execution: {"python, py and pytest allowed in the temporary repo" if args.allow_exec else "denied (edits only)"}',
               f'- CLI: {cli_version(profile) or "unknown"}; model: '
               f'{args.model or next((r["model"] for r in results if r["model"]), "unknown")}',
               f'- Sessions: {len(results)} of {sessions}; reported spend ${spent:.2f}']

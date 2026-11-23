@@ -84,6 +84,12 @@ Isolation matters more than anything else: if the no-skill arm can see the skill
   `--check` prints the command.
 - `--isolation bare`: `claude --bare` with skills passed through `--add-dir`. Needs `ANTHROPIC_API_KEY`.
 
+By default the agent can edit files but every command that runs Python is denied, so cases measure decisions and
+diffs. `--allow-exec` lets it run `python`, `py` and `pytest` inside the session's temporary repository, with the
+interpreter that runs the evals first on `PATH`, so it can reproduce bugs and run tests. That is arbitrary code
+running as your user: use it only with the suite's own fixtures, ideally in a disposable VM or container. Compare
+runs only with the same setting; `summary.md` and every result record note it.
+
 The runner reads each session's `stream-json` events. It records which skills were invoked (trigger rate),
 the reported cost, and the model. If the no-skill arm invokes or lists a suite skill, the run stops as
 CONTAMINATED instead of producing numbers. More than one session needs `--confirm`, and `--max-cost-usd`
@@ -93,8 +99,8 @@ CONTAMINATED instead of producing numbers. More than one session needs `--confir
 
 Each release lists its measured pass rates per model in the
 [changelog](https://github.com/reliable-engineering-skills/reliable-software-engineering/blob/main/CHANGELOG.md).
-Agents in those runs could edit files but not execute Python, so the cases measure decisions and diffs, not test
-execution.
+Unless a release says otherwise, agents in those runs could edit files but not execute Python, so the cases
+measure decisions and diffs, not test execution.
 
 ## License
 
