@@ -39,6 +39,10 @@ jobs:
         with:
           repository: reliable-engineering-skills/rse-security-review
           path: skills/rse-security-review
+      - uses: actions/checkout@v4
+        with:
+          repository: reliable-engineering-skills/rse-debugging
+          path: skills/rse-debugging
       - uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python }}

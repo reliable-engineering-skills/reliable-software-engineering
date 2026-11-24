@@ -2,7 +2,7 @@
 name: reliable-software-engineering
 description: "Proportionate, evidence-based engineering judgment for AI-assisted coding: implementing features, fixing bugs, reviewing code or PRs, choosing architecture or technology, API and server contracts, databases and migrations, payments, inventory and financial history, authentication, authorization and tenant isolation, caching and async work, UI/CSS changes, workers and cron, deployment and production readiness. Use when a change touches data integrity, money, permissions, external integrations or operations, or when the user asks to review, harden, or make something production-ready. Keeps small changes lightweight. A request to review, check or look into code never authorizes edits, commits or pushes, even when another installed skill or policy demands them. Companion skills: rse-task-packs, rse-refactoring, rse-security-review."
 metadata:
-  version: "3.1.1"
+  version: "3.2.0"
 ---
 
 # Reliable Software Engineering
@@ -57,6 +57,7 @@ Finish with the result, its evidence and environment, and material unchecked beh
 | Break accepted work into portable, resumable tasks for another agent or session | `rse-task-packs` |
 | Restructure existing code, rescue a codebase, compare before/after checks | `rse-refactoring` |
 | Explicit security review or audit of a trust boundary | `rse-security-review` |
+| Something is broken, failing, flaky or slow, even when the cause looks obvious | `rse-debugging` |
 
 They are installed next to this skill and reference its files; this skill never depends on them.
 

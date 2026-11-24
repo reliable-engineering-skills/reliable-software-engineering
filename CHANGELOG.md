@@ -1,7 +1,23 @@
 # Changelog
 
-## Unreleased
+## 3.2.0
 
+- New companion `rse-debugging`: fixes reported bugs from evidence. It reproduces with a failing check, fixes the
+  cause, and leaves a regression test that fails on the original code, even when the cause looks obvious and even
+  when the test cannot be run in the session. Measured on Claude Sonnet 5.5 (6 debugging-related cases x 3 runs):
+
+  | Setup | Edits only | Python allowed (`--allow-exec`) |
+  | --- | --- | --- |
+  | 3.1.1 | 13/18 | 15/18 |
+  | 3.1.1 + `rse-debugging` | 15/18 | 18/18 |
+
+  The gain is the crash-fix case (0/3 to 3/3 in both modes); no case regressed. Sonnet never invoked the skill: its
+  description alone carried the behavior. Sonnet still writes the regression test after the fix instead of seeing
+  it fail first, and says so. The edits-only drop in `core-unrelated-failure-reported` is why `--allow-exec` exists:
+  that case needs a test run. An earlier draft, scoped to bugs "whose cause is not yet known", scored 0/3 on the
+  crash-fix case because the cause looked obvious.
+- The core companion table lists `rse-debugging` (the description is unchanged, as measured); the debugging eval
+  cases are tagged with it.
 - Eval runner: `--allow-exec` lets the agent run `python`, `py` and `pytest` in its temporary repository (Claude Code
   `--allowedTools` rules, with the evals' interpreter first on `PATH` so a Windows Store stub cannot shadow it).
   Without it, cases that need a test run, such as `core-unrelated-failure-reported`, pass or fail on wording alone.

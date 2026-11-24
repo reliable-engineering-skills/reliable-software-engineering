@@ -2,7 +2,7 @@
 
 Proportionate, evidence-based engineering decisions: scope, smallest sufficient change, contracts, payments and data history, authorization, caching, operations and honest verification.
 
-Part of the **RSE skill suite**: four complementary agent skills for Claude Code and Codex. One core skill
+Part of the **RSE skill suite**: five complementary agent skills for Claude Code and Codex. One core skill
 holds the shared rules; each companion adds one workflow and points back to the core, so every rule has
 exactly one owner.
 
@@ -12,24 +12,25 @@ exactly one owner.
 | [rse-task-packs](https://github.com/reliable-engineering-skills/rse-task-packs) | Companion | Turns accepted work into portable, resumable task packs for another agent or a later session, with a structural validator. |
 | [rse-refactoring](https://github.com/reliable-engineering-skills/rse-refactoring) | Companion | Behavior-preserving refactoring and codebase rescue, one responsibility at a time, with a before/after check recorder. |
 | [rse-security-review](https://github.com/reliable-engineering-skills/rse-security-review) | Companion | Focused security review: trace untrusted input to sensitive sinks and report evidence-graded findings without touching production. |
+| [rse-debugging](https://github.com/reliable-engineering-skills/rse-debugging) | Companion | Fixes reported bugs from evidence: reproduces with a failing check, fixes the cause, and leaves a regression test, even when the cause looks obvious. |
 
 ## Install the suite
 
-The companions link into the core skill's files, so install all four side by side.
+The companions link into the core skill's files, so install all five side by side.
 
 Claude Code (PowerShell):
 
 ```powershell
-foreach ($r in "reliable-software-engineering", "rse-task-packs", "rse-refactoring", "rse-security-review") { git clone "https://github.com/reliable-engineering-skills/$r" "$env:USERPROFILE\.claude\skills\$r" }
+foreach ($r in "reliable-software-engineering", "rse-task-packs", "rse-refactoring", "rse-security-review", "rse-debugging") { git clone "https://github.com/reliable-engineering-skills/$r" "$env:USERPROFILE\.claude\skills\$r" }
 ```
 
 Claude Code (bash/zsh):
 
 ```bash
-for r in reliable-software-engineering rse-task-packs rse-refactoring rse-security-review; do git clone "https://github.com/reliable-engineering-skills/$r" ~/.claude/skills/$r; done
+for r in reliable-software-engineering rse-task-packs rse-refactoring rse-security-review rse-debugging; do git clone "https://github.com/reliable-engineering-skills/$r" ~/.claude/skills/$r; done
 ```
 
-Codex: clone the same four repositories into `~/.codex/skills/`. Update later with `git pull` in each folder.
+Codex: clone the same five repositories into `~/.codex/skills/`. Update later with `git pull` in each folder.
 
 ## Contents
 
@@ -37,7 +38,7 @@ Codex: clone the same four repositories into `~/.codex/skills/`. Update later wi
 - `references/`: loaded on demand (architecture, code quality, verification, API contracts, data and payments,
   security and controls, async and cache, UI/CSS, operations, systems lifecycle, misconceptions, sources).
 - `suite/`: development tooling for the whole suite, not loaded by agents:
-  - `suite/tools/check_skills.py`: lints all four skills (frontmatter, links, anchors, residue).
+  - `suite/tools/check_skills.py`: lints all five skills (frontmatter, links, anchors, residue).
   - `suite/evals/`: 23 behavioral cases, a self-check (an idle agent fails, the reference passes) and an A/B
     runner that compares an agent with and without the skills.
   - `suite/user-instructions/`: an optional user-level language policy and an optional review guard (see below).
@@ -104,4 +105,4 @@ measure decisions and diffs, not test execution.
 
 ## License
 
-MIT. Version 3.1.1; see the [core changelog](https://github.com/reliable-engineering-skills/reliable-software-engineering/blob/main/CHANGELOG.md).
+MIT. Version 3.2.0; see the [core changelog](https://github.com/reliable-engineering-skills/reliable-software-engineering/blob/main/CHANGELOG.md).

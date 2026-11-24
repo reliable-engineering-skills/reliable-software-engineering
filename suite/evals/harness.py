@@ -87,7 +87,7 @@ def evaluate(case, directory, output, before, context):
 
 
 def find_skills_dir(here):
-    """Locate the folder holding the four skills.
+    """Locate the folder holding the suite skills.
 
     Order: RSE_SKILLS_DIR, a monorepo `skills/` sibling, or the folder the core skill repo sits in
     (suite/evals inside ~/.claude/skills/reliable-software-engineering when the repos are cloned side by side).

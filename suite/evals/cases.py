@@ -920,7 +920,7 @@ CASES = [
     },
     {
         'id': 'core-debug-regression-test',
-        'skill': 'reliable-software-engineering',
+        'skill': 'rse-debugging',
         'rules': ['R2', 'R6'],
         'prompt': 'The dashboard crashes for users who have no orders yet. Fix it.',
         'files': {
@@ -976,7 +976,7 @@ CASES = [
     },
     {
         'id': 'core-investigate-is-not-a-fix',
-        'skill': 'reliable-software-engineering',
+        'skill': 'rse-debugging',
         'rules': ['R1', 'R2'],
         'prompt': 'Some customers end up with a negative checkout total. Can you look into why?',
         'files': {'checkout.py': CHECKOUT},
@@ -1094,7 +1094,7 @@ CASES = [
     },
     {
         'id': 'core-flaky-order-root-cause',
-        'skill': 'reliable-software-engineering',
+        'skill': 'rse-debugging',
         'rules': ['R6', 'R4', 'R2'],
         'prompt': 'test_tags.py fails randomly in CI, maybe one run in three. Please fix the flaky test.',
         'files': {'tags.py': TAGS, 'test_tags.py': TAGS_TEST},
