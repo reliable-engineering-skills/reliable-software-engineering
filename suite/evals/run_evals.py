@@ -221,7 +221,8 @@ def run_once(case, arm, profile, mode, args, out_dir):
         git(work, 'add', '-A', '--', '.', ':(exclude).claude', ':(exclude).agents', ':(exclude).codex',
             ':(exclude,glob)**/__pycache__/**', ':(exclude,glob)**/.pytest_cache/**')
         diff = git(work, 'diff', '--cached', 'HEAD')
-        checks = harness.evaluate(case, work, answer, before, harness.default_context(SKILLS))
+        checks = harness.evaluate(case, work, answer, before, harness.default_context(SKILLS),
+                                  events=harness.actions(raw))
     out_dir.mkdir(parents=True, exist_ok=True)
     (out_dir / 'answer.txt').write_text(answer or '', encoding='utf-8')
     (out_dir / 'stream.jsonl').write_text(raw or '', encoding='utf-8')

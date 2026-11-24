@@ -33,6 +33,14 @@ if os.environ.get("RSE_FAKE_LIMIT"):
     sys.exit(1)
 text = ""
 if not os.environ.get("RSE_FAKE_IDLE"):
+    for n, action in enumerate(case["reference"].get("events", [])):
+        if action[0] == "run":
+            use = {{"name": "Bash", "input": {{"command": action[2]}}}}
+        else:
+            use = {{"name": "Edit", "input": {{"file_path": os.path.abspath(action[1])}}}}
+        emit({{"type": "assistant", "message": {{"content": [dict(use, type="tool_use", id=f"t{{n}}")]}}}})
+        out = "Traceback (most recent call last):\\nZeroDivisionError: division by zero" if action[0] == "run" and action[1] else "ok"
+        emit({{"type": "user", "message": {{"content": [{{"type": "tool_result", "tool_use_id": f"t{{n}}", "content": out}}]}}}})
     harness.materialize({{"files": case["reference"].get("files", {{}})}}, ".")
     text = case["reference"].get("output", "")
 emit({{"type": "result", "subtype": "success", "result": text, "total_cost_usd": 1.0, "num_turns": 3}})
@@ -138,6 +146,51 @@ class RunnerTests(unittest.TestCase):
         self.assertEqual(proc.returncode, 1, proc.stdout + proc.stderr)
         self.assertIn('NOT READY', proc.stdout)
         self.assertIn('CLAUDE_CONFIG_DIR', proc.stdout)
+
+
+def stream(*steps):
+    """Build a stream-json transcript from ('run', command, output) and ('edit', path) steps."""
+    lines = []
+    for n, step in enumerate(steps):
+        if step[0] == 'run':
+            use = {'name': 'Bash', 'input': {'command': step[1]}}
+        else:
+            use = {'name': 'Edit', 'input': {'file_path': step[1]}}
+        lines.append(json.dumps({'type': 'assistant', 'message': {'content': [dict(use, type='tool_use', id=f't{n}')]}}))
+        out = [{'type': 'text', 'text': step[2]}] if step[0] == 'run' else 'ok'
+        lines.append(json.dumps({'type': 'user', 'message': {'content': [
+            {'type': 'tool_result', 'tool_use_id': f't{n}', 'content': out}]}}))
+    return '\n'.join(lines)
+
+
+class TranscriptCheckTests(unittest.TestCase):
+    def setUp(self):
+        sys.path.insert(0, str(HERE))
+        import harness
+        self.harness = harness
+
+    def check(self, raw):
+        return self.harness.red_before_edit(self.harness.actions(raw), {'dashboard.py'})[0]
+
+    def test_failure_seen_before_the_fix_passes(self):
+        raw = stream(('edit', '/r/test_dashboard.py'),
+                     ('run', 'python -m unittest', 'Traceback (most recent call last):\nZeroDivisionError: division by zero'),
+                     ('edit', '/r/dashboard.py'), ('run', 'python -m unittest', 'OK'))
+        self.assertTrue(self.check(raw))
+
+    def test_fix_before_any_failing_run_fails(self):
+        raw = stream(('edit', '/r/dashboard.py'), ('edit', '/r/test_dashboard.py'),
+                     ('run', 'python -m unittest', 'FAILED (failures=1)'))
+        self.assertFalse(self.check(raw))
+
+    def test_passing_or_denied_runs_do_not_count_as_reproduction(self):
+        raw = stream(('run', 'python -m unittest', 'Ran 1 test\n\nOK'),
+                     ('run', 'python repro.py', 'This command requires approval. Error: denied'),
+                     ('edit', '/r/dashboard.py'))
+        self.assertFalse(self.check(raw))
+
+    def test_plain_text_output_has_no_transcript(self):
+        self.assertIsNone(self.harness.actions('I fixed it.'))
 
 
 if __name__ == '__main__':

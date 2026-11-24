@@ -1,5 +1,22 @@
 # Changelog
 
+## 3.3.0
+
+- `rse-debugging` now writes the failing test and watches it fail before editing any code, then fixes the cause and
+  reruns it. Its description says so in that order, and the body no longer lets an obvious cause skip the run.
+  Measured with `--allow-exec` (6 debugging-related cases x 3 runs, skills installed):
+
+  | Model | Test seen failing before the fix: 3.2.0 | 3.3.0 | All six cases, 3.3.0 |
+  | --- | --- | --- | --- |
+  | Claude Sonnet 5.5 | 0/3 | 3/3 | 18/18 |
+  | Claude Opus 5.5 | not measured | 3/3 | 18/18 |
+
+  The 3.2.0 figure re-grades the saved 3.2.0 transcripts with the new check. Sonnet now invokes `rse-debugging` in
+  half of these sessions (none before). No case regressed on either model.
+- Eval harness: a `red_before_edit` expectation reads the session transcript and passes only if a command showed
+  the failure (a traceback, a failing test run or an exception) before the first edit to the listed files. It
+  applies to `core-debug-regression-test`. Agents without a structured transcript skip it.
+
 ## 3.2.0
 
 - New companion `rse-debugging`: fixes reported bugs from evidence. It reproduces with a failing check, fixes the

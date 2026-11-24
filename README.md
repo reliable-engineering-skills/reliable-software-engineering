@@ -89,7 +89,8 @@ By default the agent can edit files but every command that runs Python is denied
 diffs. `--allow-exec` lets it run `python`, `py` and `pytest` inside the session's temporary repository, with the
 interpreter that runs the evals first on `PATH`, so it can reproduce bugs and run tests. That is arbitrary code
 running as your user: use it only with the suite's own fixtures, ideally in a disposable VM or container. Compare
-runs only with the same setting; `summary.md` and every result record note it.
+runs only with the same setting; `summary.md` and every result record note it. With it, the debugging case also
+checks the order of the session: the failure must show in a command before the fix is edited.
 
 The runner reads each session's `stream-json` events. It records which skills were invoked (trigger rate),
 the reported cost, and the model. If the no-skill arm invokes or lists a suite skill, the run stops as
@@ -105,4 +106,4 @@ measure decisions and diffs, not test execution.
 
 ## License
 
-MIT. Version 3.2.0; see the [core changelog](https://github.com/reliable-engineering-skills/reliable-software-engineering/blob/main/CHANGELOG.md).
+MIT. Version 3.3.0; see the [core changelog](https://github.com/reliable-engineering-skills/reliable-software-engineering/blob/main/CHANGELOG.md).

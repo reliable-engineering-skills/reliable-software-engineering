@@ -54,12 +54,13 @@ def run(case, apply_reference):
     with tempfile.TemporaryDirectory() as tmp:
         harness.materialize(case, tmp)
         before = harness.snapshot(tmp)
-        output = ''
+        output, events = '', []
         if apply_reference:
             ref = case['reference']
             harness.materialize({'files': ref.get('files', {})}, tmp)
             output = ref.get('output', '')
-        return harness.evaluate(case, tmp, output, before, context)
+            events = ref.get('events', [])
+        return harness.evaluate(case, tmp, output, before, context, events=events)
 
 
 def main():

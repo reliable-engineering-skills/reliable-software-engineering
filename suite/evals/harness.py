@@ -1,6 +1,7 @@
 """Materialize eval fixtures and grade an agent's result with deterministic checks."""
 import fnmatch
 import hashlib
+import json
 import re
 import subprocess
 import sys
@@ -9,7 +10,12 @@ from pathlib import Path
 IGNORED_PARTS = {'.git', '.claude', '.codex', '.agents', '__pycache__', '.pytest_cache'}
 FLAGS = re.I | re.M
 CHECK_KEYS = {'files_unchanged', 'unchanged_files', 'only_changed_files', 'file_must_match', 'file_must_not_match',
-              'required_new_files', 'forbidden_new_files', 'output_must_match', 'output_must_not_match', 'post_checks'}
+              'required_new_files', 'forbidden_new_files', 'output_must_match', 'output_must_not_match', 'post_checks',
+              'red_before_edit'}
+# A command result that shows a failing check: a traceback, a failing test run or an exception name.
+RED = re.compile(r'Traceback \(most recent call last\)|^FAILED|\bFAILED \(|\b\d+ failed\b|\b[A-Z]\w*(Error|Exception)\b', re.M)
+NOT_RUN = re.compile(r'requires approval|permission|not allowed|was blocked|denied', re.I)
+EDIT_TOOLS = {'Edit', 'Write', 'MultiEdit', 'NotebookEdit'}
 
 
 def materialize(case, directory):
@@ -39,8 +45,57 @@ def fill(arg, context):
     return arg.replace('{python}', context['python']).replace('{skills}', context['skills'])
 
 
-def evaluate(case, directory, output, before, context):
-    """Return [(check name, passed, detail)] for the case's expectations."""
+def actions(raw):
+    """Return the agent's tool actions from a stream-json transcript, in order.
+
+    Each item is ('run', red, command) for a shell command, red meaning its output shows a failing check,
+    or ('edit', file name) for a file edit. None when the transcript has no structured events."""
+    uses, result, structured = {}, [], False
+    for line in (raw or '').splitlines():
+        line = line.strip()
+        if not line.startswith('{'):
+            continue
+        try:
+            event = json.loads(line)
+        except ValueError:
+            continue
+        structured = True
+        message = event.get('message')
+        content = message.get('content') if isinstance(message, dict) else None
+        for block in content if isinstance(content, list) else []:
+            if not isinstance(block, dict):
+                continue
+            if block.get('type') == 'tool_use':
+                uses[block.get('id')] = (block.get('name'), block.get('input') or {})
+            elif block.get('type') == 'tool_result' and block.get('tool_use_id') in uses:
+                name, payload = uses.pop(block['tool_use_id'])
+                text = block.get('content')
+                if isinstance(text, list):
+                    text = ' '.join(str(part.get('text', '')) for part in text if isinstance(part, dict))
+                text = str(text or '')
+                if name == 'Bash':
+                    red = bool(RED.search(text)) and not NOT_RUN.search(text[:300])
+                    result.append(('run', red, str(payload.get('command', ''))))
+                elif name in EDIT_TOOLS:
+                    path = payload.get('file_path') or payload.get('notebook_path') or ''
+                    result.append(('edit', Path(str(path)).name))
+    return result if structured else None
+
+
+def red_before_edit(events, files):
+    """True when a command showed a failing check before the first edit to any of the given files."""
+    for event in events:
+        if event[0] == 'edit' and event[1] in files:
+            return False, f'edited {event[1]} before any command showed the failure'
+        if event[0] == 'run' and event[1]:
+            return True, 'failure observed: ' + event[2][:120]
+    return False, 'no command showed the failure'
+
+
+def evaluate(case, directory, output, before, context, events=None):
+    """Return [(check name, passed, detail)] for the case's expectations.
+
+    events: the agent's actions from actions(); transcript checks are skipped when it is None."""
     expect = case['expect']
     after = snapshot(directory)
     changed = sorted(k for k in set(before) | set(after) if before.get(k) != after.get(k))
@@ -83,6 +138,9 @@ def evaluate(case, directory, output, before, context):
         except (OSError, subprocess.TimeoutExpired) as exc:
             ok, detail = False, str(exc)
         add('post_check:' + check['name'], ok, detail)
+    if expect.get('red_before_edit') and events is not None:
+        ok, detail = red_before_edit(events, set(expect['red_before_edit']))
+        add('red_before_edit', ok, detail)
     return results
 
 

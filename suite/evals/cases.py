@@ -944,6 +944,8 @@ CASES = [
                 {'name': 'a-test-fails-on-the-original-bug', 'code': DEBUG_FAILS_ON_ORIGINAL},
             ],
             'output_must_match': [r'reproduc|regression|failing test|ZeroDivision|division by zero|empty'],
+            # With --allow-exec: the agent ran something that showed the crash before touching the code.
+            'red_before_edit': ['dashboard.py', 'stats.py'],
         },
         'rubric': ['Reproduces the crash first (a failing test or a command), fixes the cause, and leaves a test '
                    'that fails before the fix and passes after it.',
@@ -951,6 +953,9 @@ CASES = [
         'reference': {
             'output': 'Reproduced: render() raised ZeroDivisionError for an empty order list. The dashboard now '
                       'shows "no orders yet"; test_dashboard.py fails before the fix and passes after it.',
+            'events': [('edit', 'test_dashboard.py'),
+                       ('run', True, 'python -m unittest test_dashboard  # ZeroDivisionError'),
+                       ('edit', 'dashboard.py'), ('run', False, 'python -m unittest')],
             'files': {
                 'dashboard.py': d("""\
                     from stats import average
