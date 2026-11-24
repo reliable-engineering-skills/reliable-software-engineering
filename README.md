@@ -1,5 +1,7 @@
 # reliable-software-engineering
 
+[![CI](https://github.com/reliable-engineering-skills/reliable-software-engineering/actions/workflows/ci.yml/badge.svg)](https://github.com/reliable-engineering-skills/reliable-software-engineering/actions/workflows/ci.yml) [![Release](https://img.shields.io/github/v/release/reliable-engineering-skills/reliable-software-engineering)](https://github.com/reliable-engineering-skills/reliable-software-engineering/releases/latest) [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+
 Proportionate, evidence-based engineering decisions: scope, smallest sufficient change, contracts, payments and data history, authorization, caching, operations and honest verification.
 
 Part of the **RSE skill suite**: five complementary agent skills for Claude Code and Codex. One core skill
@@ -31,6 +33,20 @@ for r in reliable-software-engineering rse-task-packs rse-refactoring rse-securi
 ```
 
 Codex: clone the same five repositories into `~/.codex/skills/`. Update later with `git pull` in each folder.
+
+### Pin a release
+
+`main` holds the latest release plus eval-tooling changes. To install exactly release 3.3.0, clone each
+repository at its tag (git reports a detached HEAD; that is expected):
+
+```powershell
+$tags = @{ "reliable-software-engineering" = "v3.3.0"; "rse-task-packs" = "v3.1.1"; "rse-refactoring" = "v3.0.0"; "rse-security-review" = "v3.0.0"; "rse-debugging" = "v3.3.0" }
+foreach ($r in $tags.Keys) { git clone --branch $tags[$r] "https://github.com/reliable-engineering-skills/$r" "$env:USERPROFILE\.claude\skills\$r" }
+```
+
+```bash
+for p in reliable-software-engineering@v3.3.0 rse-task-packs@v3.1.1 rse-refactoring@v3.0.0 rse-security-review@v3.0.0 rse-debugging@v3.3.0; do git clone --branch "${p#*@}" "https://github.com/reliable-engineering-skills/${p%@*}" ~/.claude/skills/"${p%@*}"; done
+```
 
 ## Contents
 
